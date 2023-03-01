@@ -2,7 +2,7 @@
 import brain
 import brain_util as bu
 import numpy as np
-import pptree
+#import pptree
 import json
 import copy
 
@@ -10,16 +10,29 @@ from collections import namedtuple
 from collections import defaultdict
 from enum import Enum
 
+
+
+
+
+
+
+
 # BrainAreas
 LEX = "LEX"
 DET = "DET"
-SUBJ = "SUBJ"
+#SUBJ = "SUBJ"
 OBJ = "OBJ"
-VERB = "VERB"
+#VERB = "VERB"
 PREP = "PREP"
 PREP_P = "PREP_P"
 ADJ = "ADJ"
 ADVERB = "ADVERB"
+VERB_PLUR = "VERB_PLUR"
+SUBJ_PLUR = "SUBJ_PLUR"
+VERB_SING = "VERB_SING"
+SUBJ_SING = "SUBJ_SING"
+
+
 
 # Unique to Russian
 NOM = "NOM"
@@ -27,7 +40,7 @@ ACC = "ACC"
 DAT = "DAT"
 
 # Fixed area stats for explicit areas
-LEX_SIZE = 20
+LEX_SIZE = 21
 
 # Actions
 DISINHIBIT = "DISINHIBIT"
@@ -37,13 +50,12 @@ INHIBIT = "INHIBIT"
 ACTIVATE_ONLY = "ACTIVATE_ONLY"
 CLEAR_DET = "CLEAR_DET"
 
-AREAS = [LEX, DET, SUBJ, OBJ, VERB, ADJ, ADVERB, PREP, PREP_P]
-EXPLICIT_AREAS = [LEX]
-RECURRENT_AREAS = [SUBJ, OBJ, VERB, ADJ, ADVERB, PREP, PREP_P]
+#AREAS = [LEX, LEX_SING, DET, SUBJ, OBJ, VERB, ADJ, ADVERB, PREP, PREP_P]
+AREAS = [LEX, DET, SUBJ_PLUR, OBJ, VERB_PLUR, ADJ, ADVERB, PREP, PREP_P, VERB_SING, SUBJ_SING]
 
-RUSSIAN_AREAS = [LEX, NOM, VERB, ACC, DAT]
-RUSSIAN_EXPLICIT_AREAS = [LEX]
-RUSSIAN_LEX_SIZE = 7
+EXPLICIT_AREAS = [LEX]
+RECURRENT_AREAS = [OBJ, ADJ, ADVERB, PREP, PREP_P, VERB_PLUR, SUBJ_PLUR, VERB_SING, SUBJ_SING]
+
 
 
 AreaRule = namedtuple('AreaRule', ['action', 'area', 'index'])
@@ -51,7 +63,17 @@ FiberRule = namedtuple('FiberRule', ['action', 'area1', 'area2', 'index'])
 FiringRule = namedtuple('FiringRule', ['action'])
 OtherRule = namedtuple('OtherRule', ['action'])
 
-def generic_noun(index):
+def generic_noun(index, form):
+
+	if form == 'plural':
+		VERB =  VERB_PLUR
+		SUBJ = SUBJ_PLUR
+
+	if form == 'singular':
+		VERB = VERB_SING 
+		SUBJ = SUBJ_SING 
+	
+
 	return {
 		"index": index,
 		"PRE_RULES": [
@@ -98,7 +120,16 @@ def generic_noun(index):
 		]
 	}
 
-def generic_trans_verb(index):
+def generic_trans_verb(index, form):
+
+	if form == 'singular':
+		VERB = VERB_SING 
+		SUBJ = SUBJ_SING 
+
+	if form == 'plural':
+		VERB = VERB_PLUR 
+		SUBJ = SUBJ_PLUR 
+
 	return {
 		"index": index,
 		"PRE_RULES": [
@@ -114,9 +145,50 @@ def generic_trans_verb(index):
 		AreaRule(INHIBIT, ADVERB, 0),
 		FiberRule(DISINHIBIT, PREP_P, VERB, 0),
 		]
-	}
+	}	
 
-def generic_intrans_verb(index):
+	'''''''''''''''''
+
+
+	if form == 'plural':
+		
+		return {
+		"index": index,
+		"PRE_RULES": [
+		FiberRule(DISINHIBIT, LEX, VERB_SING, 0),
+		FiberRule(DISINHIBIT, LEX, VERB_PLUR, 0),
+		FiberRule(DISINHIBIT, VERB_SING, SUBJ_SING, 0),
+		FiberRule(DISINHIBIT, VERB_PLUR, SUBJ_PLUR, 0),
+		FiberRule(DISINHIBIT, VERB_SING, ADVERB, 0),
+		FiberRule(DISINHIBIT, VERB_PLUR, ADVERB, 0),
+		AreaRule(DISINHIBIT, ADVERB, 1),
+		],
+		"POST_RULES": [
+		FiberRule(DISINHIBIT, LEX, VERB_SING, 0),
+		FiberRule(DISINHIBIT, LEX, VERB_PLUR, 0),
+		AreaRule(DISINHIBIT, OBJ, 0),
+		AreaRule(INHIBIT, SUBJ_SING, 0),
+		AreaRule(INHIBIT, SUBJ_PLUR, 0),
+		AreaRule(INHIBIT, ADVERB, 0),
+		FiberRule(DISINHIBIT, PREP_P, VERB_SING, 0),
+		FiberRule(DISINHIBIT, PREP_P, VERB_PLUR, 0)
+		]
+		}
+
+	'''''''''''
+	
+
+def generic_intrans_verb(index, form):
+
+	if form == 'plural':
+		VERB =  VERB_PLUR
+		SUBJ = SUBJ_PLUR
+
+	if form == 'singular':
+		VERB = VERB_SING 
+		SUBJ = SUBJ_SING 
+	
+
 	return {
 		"index": index,
 		"PRE_RULES": [
@@ -133,7 +205,17 @@ def generic_intrans_verb(index):
 		]
 	}
 
-def generic_copula(index):
+def generic_copula(index, form):
+
+	if form == 'plural':
+		VERB =  VERB_PLUR
+		SUBJ = SUBJ_PLUR
+
+	if form == 'singular':
+		VERB = VERB_SING 
+		SUBJ = SUBJ_SING 
+	
+
 	return {
 		"index": index,
 		"PRE_RULES": [
@@ -148,7 +230,9 @@ def generic_copula(index):
 		]
 	}
 
-def generic_adverb(index):
+def generic_adverb(index, form):
+
+
 	return {
 		"index": index,
 		"PRE_RULES": [
@@ -162,7 +246,9 @@ def generic_adverb(index):
 
 	}
 
-def generic_determinant(index):
+def generic_determinant(index, form):
+
+
 	return {
 		"index": index,
 		"PRE_RULES": [
@@ -171,11 +257,21 @@ def generic_determinant(index):
 		],
 		"POST_RULES": [
 		FiberRule(INHIBIT, LEX, DET, 0),
-		FiberRule(INHIBIT, VERB, ADJ, 0),
+		FiberRule(INHIBIT, VERB_PLUR, ADJ, 0),
+		FiberRule(INHIBIT, VERB_SING, ADJ, 0)
 		]
 	}
 
-def generic_adjective(index):
+def generic_adjective(index, form):
+	if form == 'plural':
+		VERB =  VERB_PLUR
+
+
+	if form == 'singular':
+		VERB = VERB_SING 
+
+	
+
 	return {
 		"index": index,
 		"PRE_RULES": [
@@ -189,7 +285,8 @@ def generic_adjective(index):
 
 	}
 
-def generic_preposition(index):
+def generic_preposition(index, form):
+
 	return {
 		"index": index,
 		"PRE_RULES": [
@@ -199,127 +296,51 @@ def generic_preposition(index):
 		"POST_RULES": [
 			FiberRule(INHIBIT, LEX, PREP, 0),
 			AreaRule(DISINHIBIT, PREP_P, 0),
-			FiberRule(INHIBIT, LEX, SUBJ, 1),
+			FiberRule(INHIBIT, LEX, SUBJ_SING, 1),
+			FiberRule(INHIBIT, LEX, SUBJ_PLUR, 1),
 			FiberRule(INHIBIT, LEX, OBJ, 1),
-			FiberRule(INHIBIT, DET, SUBJ, 1),
+			FiberRule(INHIBIT, DET, SUBJ_SING, 1),
+			FiberRule(INHIBIT, DET, SUBJ_PLUR, 1),
 			FiberRule(INHIBIT, DET, OBJ, 1),
-			FiberRule(INHIBIT, ADJ, SUBJ, 1),
+			FiberRule(INHIBIT, ADJ, SUBJ_SING, 1),
+			FiberRule(INHIBIT, ADJ, SUBJ_PLUR, 1),
 			FiberRule(INHIBIT, ADJ, OBJ, 1),
 		]
 	}
 
 LEXEME_DICT = {
-	"the" : generic_determinant(0),
-	"a": generic_determinant(1),
-	"dogs" : generic_noun(2),
-	"cats" : generic_noun(3),
-	"mice" : generic_noun(4),
-	"people" : generic_noun(5),
-	"chase" : generic_trans_verb(6),
-	"love" : generic_trans_verb(7),
-	"bite" : generic_trans_verb(8),
-	"of" : generic_preposition(9),
-	"big": generic_adjective(10),
-	"bad": generic_adjective(11),
-	"run": generic_intrans_verb(12),
-	"fly": generic_intrans_verb(13),
-	"quickly": generic_adverb(14),
-	"in": generic_preposition(15),
-	"are": generic_copula(16),
-	"man": generic_noun(17),
-	"woman": generic_noun(18),
-	"saw": generic_trans_verb(19),
+	"the" : generic_determinant(0, 'singular'),
+	"a": generic_determinant(1, 'singular'),
+	"dogs" : generic_noun(2, 'plural'),
+	"cat" : generic_noun(3, 'singular'),
+	"mice" : generic_noun(4, 'singular'),
+	"people" : generic_noun(5, 'plural'),
+	"chase" : generic_trans_verb(6, 'plural'),
+	"loves" : generic_trans_verb(7, 'singular'),
+	"bites" : generic_trans_verb(8, 'singular'),
+	"of" : generic_preposition(9, 'singular'),
+	"big": generic_adjective(10, 'singular'),
+	"bad": generic_adjective(11, 'singular'),
+	"run": generic_intrans_verb(12, 'singular'),
+	"fly": generic_intrans_verb(13, 'singular'),
+	"quickly": generic_adverb(14, 'singular'),
+	"in": generic_preposition(15, 'singular'),
+	"are": generic_copula(16, 'singular'),
+	"man": generic_noun(17, 'singular'),
+	"woman": generic_noun(18, 'singular'),
+	"saw": generic_trans_verb(19, 'plural'),
+	"sees": generic_trans_verb(20, 'singular')
 }
 
-def generic_russian_verb(index):
-	return {
-		"area": LEX,
-		"index": index,
-		"PRE_RULES": [
-		AreaRule(DISINHIBIT, VERB, 0),
-		FiberRule(DISINHIBIT, LEX, VERB, 0),
-		FiberRule(DISINHIBIT, VERB, NOM, 0),
-		FiberRule(DISINHIBIT, VERB, ACC, 0),
-		],
-		"POST_RULES": [
-		FiberRule(INHIBIT, LEX, VERB, 0)
-		]
-	}
-
-def generic_russian_ditransitive_verb(index):
-	return {
-		"area": LEX,
-		"index": index,
-		"PRE_RULES": [
-		AreaRule(DISINHIBIT, VERB, 0),
-		FiberRule(DISINHIBIT, LEX, VERB, 0),
-		FiberRule(DISINHIBIT, VERB, NOM, 0),
-		FiberRule(DISINHIBIT, VERB, ACC, 0),
-		FiberRule(DISINHIBIT, VERB, DAT, 0),
-		],
-		"POST_RULES": [
-		FiberRule(INHIBIT, LEX, VERB, 0)
-		]
-	}
-
-def generic_russian_nominative_noun(index):
-	return {
-		"area": LEX,
-		"index": index,
-		"PRE_RULES": [
-		AreaRule(DISINHIBIT, NOM, 0),
-		FiberRule(DISINHIBIT, LEX, NOM, 0),
-		],
-		"POST_RULES": [
-		FiberRule(INHIBIT, LEX, NOM, 0)
-		]
-	}
-
-def generic_russian_accusative_noun(index):
-	return {
-		"area": LEX,
-		"index": index,
-		"PRE_RULES": [
-		AreaRule(DISINHIBIT, ACC, 0),
-		FiberRule(DISINHIBIT, LEX, ACC, 0),
-		],
-		"POST_RULES": [
-		FiberRule(INHIBIT, LEX, ACC, 0)
-		]
-	}
-
-def generic_russian_dative_noun(index):
-	return {
-		"area": LEX,
-		"index": index,
-		"PRE_RULES": [
-		AreaRule(DISINHIBIT, DAT, 0),
-		FiberRule(DISINHIBIT, LEX, DAT, 0),
-		],
-		"POST_RULES": [
-		FiberRule(INHIBIT, LEX, DAT, 0)
-		]
-	}
-
-
-RUSSIAN_LEXEME_DICT = {
-	"vidit": generic_russian_verb(0),
-	"lyubit": generic_russian_verb(1),
-	"kot": generic_russian_nominative_noun(2),
-	"kota": generic_russian_accusative_noun(2),
-	"sobaka": generic_russian_nominative_noun(3),
-	"sobaku": generic_russian_accusative_noun(3),
-	"sobakie": generic_russian_dative_noun(3),
-	"kotu": generic_russian_dative_noun(2),
-	"dayet": generic_russian_ditransitive_verb(4)
-}
 
 
 ENGLISH_READOUT_RULES = {
-	VERB: [LEX, SUBJ, OBJ, PREP_P, ADVERB, ADJ],
-	SUBJ: [LEX, DET, ADJ, PREP_P],
+	VERB_SING: [LEX,  SUBJ_SING, OBJ, PREP_P, ADVERB, ADJ],
+	SUBJ_SING: [LEX, DET, ADJ, PREP_P],
+	VERB_PLUR: [LEX,  SUBJ_PLUR, OBJ, PREP_P, ADVERB, ADJ],
+	SUBJ_PLUR: [LEX, DET, ADJ, PREP_P],
 	OBJ: [LEX, DET, ADJ, PREP_P],
-	PREP_P: [LEX, PREP, ADJ, DET],
+	PREP_P: [LEX,  PREP, ADJ, DET],
 	PREP: [LEX],
 	ADJ: [LEX],
 	DET: [LEX],
@@ -327,13 +348,6 @@ ENGLISH_READOUT_RULES = {
 	LEX: [],
 }
 
-RUSSIAN_READOUT_RULES = {
-	VERB: [LEX, NOM, ACC, DAT],
-	NOM: [LEX],
-	ACC: [LEX],
-	DAT: [LEX],
-	LEX: [],
-}
 
 class ParserBrain(brain.Brain):
 	def __init__(self, p, lexeme_dict={}, all_areas=[], recurrent_areas=[], initial_areas=[], readout_rules={}):
@@ -417,6 +431,7 @@ class ParserBrain(brain.Brain):
 	def activateWord(self, area_name, word):
 		area = self.areas[area_name]
 		k = area.k
+
 		assembly_start = self.lexeme_dict[word]["index"]*k
 		area.winners = list(range(assembly_start, assembly_start+k))
 		area.fix_assembly()
@@ -456,66 +471,39 @@ class ParserBrain(brain.Brain):
 		return pruned_activated_fibers
 
 
-class RussianParserBrain(ParserBrain):
-	def __init__(self, p, non_LEX_n=10000, non_LEX_k=100, LEX_k=10, 
-		default_beta=0.2, LEX_beta=1.0, recurrent_beta=0.05, interarea_beta=0.5, verbose=False):
-
-		recurrent_areas = [NOM, VERB, ACC, DAT]
-		ParserBrain.__init__(self, p, 
-			lexeme_dict=RUSSIAN_LEXEME_DICT, 
-			all_areas=RUSSIAN_AREAS, 
-			recurrent_areas=recurrent_areas,
-			initial_areas=[LEX],
-			readout_rules=RUSSIAN_READOUT_RULES)
-		self.verbose = verbose
-
-		LEX_n = RUSSIAN_LEX_SIZE * LEX_k
-		self.add_explicit_area(LEX, LEX_n, LEX_k, default_beta)
-
-		self.add_area(NOM, non_LEX_n, non_LEX_k, default_beta)
-		self.add_area(ACC, non_LEX_n, non_LEX_k, default_beta)
-		self.add_area(VERB, non_LEX_n, non_LEX_k, default_beta)
-		self.add_area(DAT, non_LEX_n, non_LEX_k, default_beta)
-
-		# LEX: all areas -> * strong, * -> * can be strong
-		# non LEX: other areas -> * (?), LEX -> * strong, * -> * weak
-		# DET? Should it be different?
-		custom_plasticities = defaultdict(list)
-		for area in recurrent_areas:
-			custom_plasticities[LEX].append((area, LEX_beta))
-			custom_plasticities[area].append((LEX, LEX_beta))
-			custom_plasticities[area].append((area, recurrent_beta))
-			for other_area in recurrent_areas:
-				if other_area == area:
-					continue
-				custom_plasticities[area].append((other_area, interarea_beta))
-
-		self.update_plasticities(area_update_map=custom_plasticities)
-
-
 class EnglishParserBrain(ParserBrain):
-	def __init__(self, p, non_LEX_n=10000, non_LEX_k=100, LEX_k=20, 
+	def __init__(self, p, non_LEX_n=10000, non_LEX_k=100, LEX_k=21, 
 		default_beta=0.2, LEX_beta=1.0, recurrent_beta=0.05, interarea_beta=0.5, verbose=False):
 		ParserBrain.__init__(self, p, 
-			lexeme_dict=LEXEME_DICT, 
+			lexeme_dict=LEXEME_DICT,
 			all_areas=AREAS, 
 			recurrent_areas=RECURRENT_AREAS, 
-			initial_areas=[LEX, SUBJ, VERB],
+			initial_areas=[LEX, SUBJ_SING, VERB_SING, SUBJ_PLUR, VERB_PLUR],
 			readout_rules=ENGLISH_READOUT_RULES)
 		self.verbose = verbose
 
+		## singular
 		LEX_n = LEX_SIZE * LEX_k
 		self.add_explicit_area(LEX, LEX_n, LEX_k, default_beta)
 
+
 		DET_k = LEX_k
-		self.add_area(SUBJ, non_LEX_n, non_LEX_k, default_beta)
+		self.add_area(SUBJ_SING, non_LEX_n, non_LEX_k, default_beta)
+		self.add_area(SUBJ_PLUR, non_LEX_n, non_LEX_k, default_beta)
+		#self.add_area(SUBJ, non_LEX_n, non_LEX_k, default_beta)
 		self.add_area(OBJ, non_LEX_n, non_LEX_k, default_beta)
-		self.add_area(VERB, non_LEX_n, non_LEX_k, default_beta)
+		#self.add_area(VERB, non_LEX_n, non_LEX_k, default_beta)
+		self.add_area(VERB_SING, non_LEX_n, non_LEX_k, default_beta)
+		self.add_area(VERB_PLUR, non_LEX_n, non_LEX_k, default_beta)
 		self.add_area(ADJ, non_LEX_n, non_LEX_k, default_beta)
 		self.add_area(PREP, non_LEX_n, non_LEX_k, default_beta)
 		self.add_area(PREP_P, non_LEX_n, non_LEX_k, default_beta)
 		self.add_area(DET, non_LEX_n, DET_k, default_beta)
 		self.add_area(ADVERB, non_LEX_n, non_LEX_k, default_beta)
+
+
+
+
 
 		# LEX: all areas -> * strong, * -> * can be strong
 		# non LEX: other areas -> * (?), LEX -> * strong, * -> * weak
@@ -535,7 +523,7 @@ class EnglishParserBrain(ParserBrain):
 	def getProjectMap(self):
 		proj_map = ParserBrain.getProjectMap(self)
 		# "War of fibers"
-		if LEX in proj_map and len(proj_map[LEX]) > 2:  # because LEX->LEX
+		if LEX in proj_map and len(proj_map[LEX]) > 4:  # because LEX->LEX
 			raise Exception("Got that LEX projecting into many areas: " + str(proj_map[LEX]))
 		return proj_map
 
@@ -631,9 +619,9 @@ class ParserDebugger():
 # strengthen the assembly representing this word in LEX
 # possibly useful way to simulate long-term potentiated word assemblies 
 # so that they are easily completed.
-def potentiate_word_in_LEX(b, word, rounds=20):
+def potentiate_word_in_LEX(b, word, rounds=21):
 	b.activateWord(LEX, word)
-	for _ in range(20):
+	for _ in range(21):
 		b.project({}, {LEX: [LEX]})
 
 # "dogs chase cats" experiment, what should happen?
@@ -662,8 +650,8 @@ class ReadoutMethod(Enum):
 
 
 
-def parse(sentence="cats chase mice", language="English", p=0.1, LEX_k=20, 
-	project_rounds=20, verbose=True, debug=False, readout_method=ReadoutMethod.FIBER_READOUT):
+def parse(sentence="mice loves cat", language="English", p=0.1, LEX_k=21, LEX_k_p = 5,
+	project_rounds=21, verbose=False, debug=False, readout_method=ReadoutMethod.FIBER_READOUT):
 
 	if language == "English":
 		b = EnglishParserBrain(p, LEX_k=LEX_k, verbose=verbose)
@@ -672,15 +660,9 @@ def parse(sentence="cats chase mice", language="English", p=0.1, LEX_k=20,
 		explicit_areas = EXPLICIT_AREAS
 		readout_rules = ENGLISH_READOUT_RULES
 
-	if language == "Russian":
-		b = RussianParserBrain(p, LEX_k=LEX_k, verbose=verbose)
-		lexeme_dict = RUSSIAN_LEXEME_DICT
-		all_areas = RUSSIAN_AREAS
-		explicit_areas = RUSSIAN_EXPLICIT_AREAS
-		readout_rules = RUSSIAN_READOUT_RULES
 
 	parseHelper(b, sentence, p, LEX_k, project_rounds, verbose, debug, 
-		lexeme_dict, all_areas, explicit_areas, readout_method, readout_rules)
+		lexeme_dict,all_areas, explicit_areas, readout_method, readout_rules)
 
 
 def parseHelper(b, sentence, p, LEX_k, project_rounds, verbose, debug, 
@@ -692,6 +674,11 @@ def parseHelper(b, sentence, p, LEX_k, project_rounds, verbose, debug,
 	extreme_debug = False
 
 	for word in sentence:
+		if word not in lexeme_dict:
+			print(word, 'is not in dictionnary, moving to the next word')
+			continue
+
+
 		lexeme = lexeme_dict[word]
 		b.activateWord(LEX, word)
 		if verbose:
@@ -760,6 +747,11 @@ def parseHelper(b, sentence, p, LEX_k, project_rounds, verbose, debug,
 				continue
 			b.project({}, {to_area: [LEX]})
 			other_word = b.getWord(LEX)
+
+			if other_word ==  '<NON-WORD>':
+				print('syntactic error')
+
+
 			dependencies.append([this_word, other_word, to_area])
 
 		for to_area in to_areas:
@@ -775,18 +767,40 @@ def parseHelper(b, sentence, p, LEX_k, project_rounds, verbose, debug,
 			else:
 				treeify(values, key_node)
 
+	
+
 	if readout_method == ReadoutMethod.FIXED_MAP_READOUT:
 		# Try "reading out" the parse.
 		# To do so, start with final assembly in VERB
 		# project VERB->SUBJ,OBJ,LEX
 
-		parsed = {VERB: read_out(VERB, readout_rules)}
+		parsed = {VERB_SING: read_out(VERB_PLUR, readout_rules)}
 
 		print("Final parse dict: ")
 		print(parsed)
 
-		root = pptree.Node(VERB)
-		treeify(parsed[VERB], root)
+		root = pptree.Node(VERB_SING)
+		treeify(parsed[VERB_SING], root)
+
+
+
+	if readout_method == ReadoutMethod.FIXED_MAP_READOUT:
+		# Try "reading out" the parse.
+		# To do so, start with final assembly in VERB
+		# project VERB->SUBJ,OBJ,LEX
+
+		parsed = {VERB_PLUR: read_out(VERB_PLUR, readout_rules)}
+
+		print("Final parse dict: ")
+		print(parsed)
+
+		root = pptree.Node(VERB_PLUR)
+		treeify(parsed[VERB_PLUR], root)
+
+
+
+
+		
 
 	if readout_method == ReadoutMethod.FIBER_READOUT:
 		activated_fibers = b.getActivatedFibers()
@@ -794,7 +808,17 @@ def parseHelper(b, sentence, p, LEX_k, project_rounds, verbose, debug,
 			print("Got activated fibers for readout:")
 			print(activated_fibers)
 
-		read_out(VERB, activated_fibers)
+		read_out(VERB_SING, activated_fibers)
+		print("Got dependencies: ")
+		print(dependencies)
+
+	if readout_method == ReadoutMethod.FIBER_READOUT:
+		activated_fibers = b.getActivatedFibers()
+		if verbose:
+			print("Got activated fibers for readout:")
+			print(activated_fibers)
+
+		read_out(VERB_PLUR, activated_fibers)
 		print("Got dependencies: ")
 		print(dependencies)
 
